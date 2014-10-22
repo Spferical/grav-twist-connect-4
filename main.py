@@ -562,7 +562,7 @@ def draw_text(text, font, surface, x, y, color=WHITE, background=None,
     elif position == 'topright':
         textrect.topright = (x, y)
     if background:
-        pygame.draw.rect(screen, background, textrect.inflate(2, 2))
+        pygame.draw.rect(surface, background, textrect.inflate(2, 2))
     surface.blit(textobj, textrect)
     return textrect  # for knowing where to redraw the background
 
