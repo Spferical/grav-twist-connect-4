@@ -4,6 +4,7 @@ import pygame
 from pygame.locals import *
 import sys
 import random
+import copy
 
 WINDOW_WIDTH = 640
 WINDOW_HEIGHT = 480
@@ -30,6 +31,42 @@ PLAYER_COLORS = [0, BLACK, RED]
 BG_COLOR = BLUE
 
 MAX_FPS = 30
+
+
+class AI:
+    def __init__(self, team):
+        self.team = team
+
+    def get_move(self, board):
+        """Returns the column # to drop the piece in."""
+
+        board = copy.deepcopy(board)
+
+        # see if any team could win by dropping a piece into a column
+        line_completions = []
+        for x in range(board.width):
+            y = board.lowest_in_column(x)
+            if y != -1:
+                board.drop_piece(x, self.team)
+                board.grid[x][y] = self.team
+                line_completions.append(list(board.check_victory()))
+                board.grid[x][y] = 1
+                line_completions[-1].extend(list(board.check_victory()))
+                board.grid[x][y] = 0
+
+
+        # first of all, if we can make a 4-in-a-row, do it!
+        for x, c in enumerate(line_completions):
+            if self.team in c:
+                return x
+
+        # blocking an opponent's 4-in-a-row is the 2nd highest piority
+        for x, c in enumerate(line_completions):
+            if c:
+                return x
+
+        # otherwise, just go in a random spot
+        return random.randint(0, board.width - 1)
 
 
 class Board:
@@ -85,13 +122,13 @@ class Board:
             print(row)
 
     def lowest_in_column(self, column):
-        y = 0
-        while self.grid[column][y] == 0:
-            y += 1
-            if y >= self.height:
-                break
-        y -= 1
-        return y
+        """Returns the y-coordinate for the lowest empty position in the given
+        column.
+        Returns -1 if the column is full"""
+        for y in range(self.height - 1, -1, -1):
+            if self.grid[column][y] == 0:
+                return y
+        return -1
 
     def drop_piece(self, column, player):
         y = self.lowest_in_column(column)
@@ -182,8 +219,12 @@ class Board:
 
 class Game:
 
-    def __init__(self, screen):
+    def __init__(self, screen, ai=True):
         self.screen = screen
+        if ai:
+            self.ai = AI(2)
+        else:
+            self.ai = None
         self.timer = pygame.time.Clock()
         self.board = Board(BOARD_WIDTH, BOARD_HEIGHT)
         self.bg = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT))
@@ -256,6 +297,10 @@ class Game:
         self.animate_circle_movement(x, starting_y, x, end_y, time,
                                      PLAYER_COLORS[self.active_player])
 
+    def do_ai_turn(self):
+        self.column_selected = self.ai.get_move(self.board)
+        self.drop_piece()
+
     def drop_piece(self):
         if not self.board.column_blocked(self.column_selected):
             self.animate_drop_piece()
@@ -280,6 +325,9 @@ class Game:
             self.update_column_selected()
 
             self.handle_victory()
+
+            if not self.winner and self.active_player == 2 and self.ai:
+                self.do_ai_turn()
 
     def handle_victory(self):
         v = list(self.board.check_victory())
