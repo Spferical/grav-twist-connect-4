@@ -33,7 +33,7 @@ BG_COLOR = BLUE
 MAX_FPS = 30
 
 
-class AI:
+class AI(object):
 
     def __init__(self, team):
         self.team = team
@@ -69,7 +69,7 @@ class AI:
         return random.randint(0, board.width - 1)
 
 
-class Board:
+class Board(object):
 
     """Two-dimensional Connect 4 board."""
 
@@ -221,7 +221,7 @@ class Board:
                         yield (self.grid[x][y], line)
 
 
-class Game:
+class Game(object):
 
     """Singleton that manages input, rendering, and game logic."""
 
