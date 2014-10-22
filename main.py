@@ -70,6 +70,7 @@ class AI:
 
 
 class Board:
+    """Two-dimensional Connect 4 board."""
 
     def __init__(self, width, height):
         self.width = width
@@ -179,7 +180,8 @@ class Board:
 
     def check_victory(self):
         """
-        Returns (winning team, list of positions in 4-in-a-row.
+        Yields (winning team, list of positions in 4-in-a-row)
+        list of positions is in the form [(x1, y1), (x2, y2), ...]
         """
         # for each position in the grid, checks lines extending from it
         # pointing right, down, down-right, and down-left
@@ -214,10 +216,11 @@ class Board:
                             match = False
                             break
                     if match:
-                        yield(self.grid[x][y], line)
+                        yield (self.grid[x][y], line)
 
 
 class Game:
+    """Singleton that manages input, rendering, and game logic."""
 
     def __init__(self, screen, ai=True):
         self.screen = screen
@@ -237,6 +240,7 @@ class Game:
         self.victory_lines = []
         self.font = pygame.font.Font(None, 50)
 
+        # make a table image and fill it with squares
         self.table_image = pygame.surface.Surface((1000, 1000))
         self.table_image.fill((0, 128, 200))
         for n in range(100):
@@ -252,12 +256,16 @@ class Game:
         draw_circle_window_icon(BLACK)
 
     def run(self):
+        """Runs the game.
+        Limits FPS, handles input, and renders, in a loop."""
         while True:
             self.timer.tick(MAX_FPS)
             self.handle_input()
             self.render_all()
 
     def get_column_clicked(self, position):
+        """Takes a mouse position and returns the column of the board that it
+        was in."""
         x = position[0]
         width_per_row = self.board.rect.width / BOARD_WIDTH
         x_relative_to_board = x - self.board.rect.left
@@ -266,6 +274,7 @@ class Game:
 
     def animate_circle_movement(self, x1, y1, x2, y2, num_seconds=1,
                                 color=BLACK):
+        """Animates a circle smoothly moving from one position to another."""
         g = self.iterate_circle_movement(x1, y1, x2, y2, num_seconds, color)
         for d in range(int(MAX_FPS * num_seconds)):
             pygame.event.get()
@@ -277,6 +286,8 @@ class Game:
 
     def iterate_circle_movement(self, x1, y1, x2, y2, num_seconds=1,
                                 color=BLACK):
+        """Animates a circle smoothly moving from one position to another, one
+        iteration at a time."""
         # to be called once per frame
         for d in range(int(MAX_FPS * num_seconds)):
             x = x1 + (x2 - x1) * d / int(MAX_FPS * num_seconds)
@@ -286,6 +297,8 @@ class Game:
             yield
 
     def animate_drop_piece(self):
+        """Animates a piece in the selected column falling to the lowest empty
+        board position in that column."""
         starting_y = self.board.rect.top - 4
         x = self.board.rect.left + \
             self.board.get_column_relative_x(self.column_selected)
@@ -298,10 +311,14 @@ class Game:
                                      PLAYER_COLORS[self.active_player])
 
     def do_ai_turn(self):
+        """Gets a move from the AI, and drops its piece."""
         self.column_selected = self.ai.get_move(self.board)
         self.drop_piece()
 
     def drop_piece(self):
+        """Drops a game piece for the active team into the currently-selected
+        column, animates it, handles game logic, and immediately does the AI
+        turn if needed."""
         if not self.board.column_blocked(self.column_selected):
             self.animate_drop_piece()
             # drop piece
@@ -330,6 +347,7 @@ class Game:
                 self.do_ai_turn()
 
     def handle_victory(self):
+        """Checks for victory, selects the winner, and draws victory lines."""
         v = list(self.board.check_victory())
         if v:
             for (winner, positions) in v:
@@ -350,6 +368,7 @@ class Game:
             self.winner = winning_player
 
     def slowly_draw_lines(self, lines):
+        """Slowly draws multiple lines at the same time."""
         generators = []
         for (p1, p2) in lines:
             generators.append(self.iterate_slowly_draw_line(p1, p2))
@@ -363,6 +382,7 @@ class Game:
             self.timer.tick(MAX_FPS)
 
     def slowly_draw_line(self, p1, p2):
+        """Slowly draws a line."""
         (x1, y1) = p1
         (x2, y2) = p2
         generator = self.iterate_slowly_draw_line(p1, p2)
@@ -375,6 +395,7 @@ class Game:
             self.timer.tick(MAX_FPS)
 
     def iterate_slowly_draw_line(self, p1, p2):
+        """Slowly draws a line, one iteration at a time."""
         (x1, y1) = p1
         (x2, y2) = p2
         for d in range(MAX_FPS):
@@ -385,6 +406,8 @@ class Game:
             yield
 
     def rotate(self):
+        """Rotates the board and makes the pieces fall. Each part is
+        animated as well."""
         centerx = self.board.rect.centerx
         centery = self.board.rect.centery
         for degree in range(1, 90, 10):
@@ -423,6 +446,7 @@ class Game:
         self.board.update_image()
 
     def update_column_selected(self):
+        """Updates the selected column based on the current mouse position."""
         pos = pygame.mouse.get_pos()
         self.column_selected = self.get_column_clicked(pos)
         if self.column_selected < 0:
@@ -462,6 +486,7 @@ class Game:
                 sys.exit()
 
     def render_background(self):
+        """Renders the background, including a mode 7 effect for the table."""
         # draw background
         self.screen.blit(self.bg, (0, 0))
         # draw table, mode 7 effect-ish
@@ -477,13 +502,12 @@ class Game:
             self.screen.blit(line, (x, y))
 
     def render_board(self):
-        # draw board
+        """Draws the board."""
         self.screen.blit(
             self.board.image, (self.board.rect.x, self.board.rect.y))
 
     def draw_current_piece(self):
-        # draw thing over column selected by player
-        # player 1 is black, player 2 is red
+        """Draws a piece over the currently-selected column."""
         radius = self.board.get_circle_radius()
         pygame.draw.circle(self.screen, PLAYER_COLORS[self.active_player], (
             self.board.rect.left +
@@ -492,17 +516,21 @@ class Game:
             radius)
 
     def draw_victory_lines(self):
+        """Draws lines over 4-in-a-rows."""
         for (p1, p2) in self.victory_lines:
             pygame.draw.line(
                 self.screen, VICTORY_LINE_COLOR, p1, p2, VICTORY_LINE_SIZE)
 
     def draw_moves_until_rotate(self):
+        """Draws the number of moves until the next board rotation to the
+        top-left of the screen."""
         moves = ROTATE_TIME - self.num_pieces_dropped % ROTATE_TIME
         if moves == 0:
             moves = ROTATE_TIME
         draw_text(str(moves), self.font, self.screen, 10, 10)
 
     def render_all(self):
+        """Renders everything and updates the display."""
         self.render_background()
         self.render_board()
         if not self.winner:
@@ -513,18 +541,16 @@ class Game:
         pygame.display.flip()
 
     def board_to_screen_pos(self, pos):
+        """Converts the given position in board coordinates into screen
+        coordinates."""
         (x, y) = pos
         return (self.board.rect.left + self.board.get_column_relative_x(x),
                 self.board.rect.top + self.board.get_row_relative_y(y))
 
 
-def round_to_nearest(x, base=5):
-    return int(base * round(float(x) / base))
-
-
 def draw_text(text, font, surface, x, y, color=WHITE, background=None,
               position="topleft"):
-    # draws some text in the given font to the surface
+    """Draws some text to the surface."""
     textobj = font.render(text, 1, color)
     textrect = textobj.get_rect()
     if position == 'center':
@@ -542,6 +568,7 @@ def draw_text(text, font, surface, x, y, color=WHITE, background=None,
 
 
 def draw_circle_window_icon(color):
+    """Draws a circle in the given color and sets it as the window icon."""
     icon = pygame.Surface((32, 32))
     icon.convert()
     icon.fill(BG_COLOR)
