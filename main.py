@@ -34,6 +34,7 @@ MAX_FPS = 30
 
 
 class AI:
+
     def __init__(self, team):
         self.team = team
 
@@ -54,7 +55,6 @@ class AI:
                 line_completions[-1].extend(list(board.check_victory()))
                 board.grid[x][y] = 0
 
-
         # first of all, if we can make a 4-in-a-row, do it!
         for x, c in enumerate(line_completions):
             if self.team in c:
@@ -70,6 +70,7 @@ class AI:
 
 
 class Board:
+
     """Two-dimensional Connect 4 board."""
 
     def __init__(self, width, height):
@@ -173,9 +174,10 @@ class Board:
                     color = BLACK
                 elif self.grid[x][y] == 2:
                     color = RED
-                pygame.draw.circle(self.image, color, (
-                    self.get_column_relative_x(x),
-                    self.get_row_relative_y(y)),
+                pygame.draw.circle(
+                    self.image, color, (
+                        self.get_column_relative_x(x),
+                        self.get_row_relative_y(y)),
                     radius)
 
     def check_victory(self):
@@ -220,6 +222,7 @@ class Board:
 
 
 class Game:
+
     """Singleton that manages input, rendering, and game logic."""
 
     def __init__(self, screen, ai=True):
@@ -270,7 +273,7 @@ class Game:
         width_per_row = self.board.rect.width / BOARD_WIDTH
         x_relative_to_board = x - self.board.rect.left
 
-        return int(round(x_relative_to_board) / width_per_row - 1/2)
+        return int(round(x_relative_to_board) / width_per_row - 1 / 2)
 
     def animate_circle_movement(self, x1, y1, x2, y2, num_seconds=1,
                                 color=BLACK):
@@ -383,8 +386,6 @@ class Game:
 
     def slowly_draw_line(self, p1, p2):
         """Slowly draws a line."""
-        (x1, y1) = p1
-        (x2, y2) = p2
         generator = self.iterate_slowly_draw_line(p1, p2)
         for d in range(MAX_FPS):
             pygame.event.get()
@@ -509,10 +510,11 @@ class Game:
     def draw_current_piece(self):
         """Draws a piece over the currently-selected column."""
         radius = self.board.get_circle_radius()
-        pygame.draw.circle(self.screen, PLAYER_COLORS[self.active_player], (
-            self.board.rect.left +
-            self.board.get_column_relative_x(self.column_selected),
-            self.board.rect.top - radius - 2),
+        pygame.draw.circle(
+            self.screen, PLAYER_COLORS[self.active_player], (
+                self.board.rect.left +
+                self.board.get_column_relative_x(self.column_selected),
+                self.board.rect.top - radius - 2),
             radius)
 
     def draw_victory_lines(self):
