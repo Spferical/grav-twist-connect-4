@@ -48,7 +48,6 @@ class AI(object):
         for x in range(board.width):
             y = board.lowest_in_column(x)
             if y != -1:
-                board.drop_piece(x, self.team)
                 board.grid[x][y] = self.team
                 line_completions.append(list(board.check_victory()))
                 board.grid[x][y] = 1
