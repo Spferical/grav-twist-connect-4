@@ -38,21 +38,51 @@ class AI(object):
     def __init__(self, team):
         self.team = team
 
-    def get_move(self, board):
+    def check_victory(self, board, x, rotate):
+        """Add a piece to the board at column x, and check if it would give
+        victory.  Right afterwards, remove the piece.
+
+        Returns a list of the form (winning team, line)
+        where line is of the form [(x1, y1), (x2, y2), ...]."""
+        # TODO: detect the enemy team instead of assuming it's 1
+        enemy_team = 1
+        y = board.lowest_in_column(x)
+        victory = []
+
+        if y != -1:
+            if rotate:
+                # rotation isn't reversible, so we need to make copies of the
+                # board to preserve the original
+                for team in (self.team, enemy_team):
+                    tmp_board = copy.deepcopy(board)
+                    tmp_board.grid[x][y] = team
+                    tmp_board.rotate()
+                    tmp_board.make_pieces_fall()
+                    victory.extend(tmp_board.check_victory())
+
+            else:
+                # not rotating
+                board.grid[x][y] = self.team
+                victory.extend(board.check_victory())
+
+                board.grid[x][y] = enemy_team
+                victory.extend(board.check_victory())
+
+                board.grid[x][y] = 0
+
+        return victory
+
+    def get_move(self, board, turns_til_rotation):
         """Returns the column # to drop the piece in."""
 
+        # if the board is about to rotate, we want the AI to simulate that and
+        # catch 4-in-a-rows that result from this.
+        rotate = turns_til_rotation == 1
         board = copy.deepcopy(board)
 
         # see if any team could win by dropping a piece into a column
-        line_completions = []
-        for x in range(board.width):
-            y = board.lowest_in_column(x)
-            if y != -1:
-                board.grid[x][y] = self.team
-                line_completions.append(list(board.check_victory()))
-                board.grid[x][y] = 1
-                line_completions[-1].extend(list(board.check_victory()))
-                board.grid[x][y] = 0
+        line_completions = [self.check_victory(board, x, rotate)
+                            for x in range(board.width)]
 
         # first of all, if we can make a 4-in-a-row, do it!
         for x, c in enumerate(line_completions):
@@ -314,7 +344,8 @@ class Game(object):
 
     def do_ai_turn(self):
         """Gets a move from the AI, and drops its piece."""
-        self.column_selected = self.ai.get_move(self.board)
+        time_til_rotation = ROTATE_TIME - self.num_pieces_dropped % ROTATE_TIME
+        self.column_selected = self.ai.get_move(self.board, time_til_rotation)
         self.drop_piece()
 
     def drop_piece(self):
