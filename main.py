@@ -144,13 +144,12 @@ class Board(object):
                 if cy != y:
                     yield ((x, y), (x, cy))
 
-    def print_text_board(self):
+    def get_string(self):
         printboard = [''] * len(self.grid[0])
         for x in range(self.width):
             for y in range(self.height):
                 printboard[y] += str(self.grid[x][y])
-        for row in printboard:
-            print(row)
+        return '\n'.join(printboard)
 
     def lowest_in_column(self, column):
         """Returns the y-coordinate for the lowest empty position in the given
